@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>药明康德 · 小核酸BD雷达系统</title>
+<style>
+  :root {
+    --primary: #1a56db;
+    --primary-dark: #1e429f;
+    --success: #057a55;
+    --warning: #c27803;
+    --danger: #c81e1e;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+    --sidebar-width: 320px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--gray-100); color: var(--gray-800); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ===== TOP NAV ===== */
+  .topnav {
+    background: linear-gradient(135deg, #1a56db 0%, #1e429f 100%);
+    color: white; padding: 0 24px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex-shrink: 0; z-index: 100;
+  }
+  .topnav-left { display: flex; align-items: center; gap: 12px; }
+  .topnav-logo { font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+  .topnav-sub { font-size: 12px; opacity: 0.75; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 10px; }
+  .topnav-right { display: flex; align-items: center; gap: 10px; }
+  .btn { padding: 7px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-white { background: white; color: var(--primary); }
+  .btn-white:hover { background: #f0f4ff; }
+  .btn-outline { background: transparent; color: white; border: 1px solid rgba(255,255,255,0.5); }
+  .btn-outline:hover { background: rgba(255,255,255,0.1); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-success { background: #057a55; color: white; }
+  .btn-success:hover { background: #046c4e; }
+  .btn-danger { background: #c81e1e; color: white; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+
+  /* ===== TABS ===== */
+  .tabs { display: flex; background: white; border-bottom: 1px solid var(--gray-200); flex-shrink: 0; padding: 0 24px; }
+  .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--gray-600); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .tab:hover { color: var(--primary); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+  .tab-badge { background: #fee2e2; color: #c81e1e; padding: 1px 6px; border-radius: 10px; font-size: 11px; }
+
+  /* ===== MAIN LAYOUT ===== */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ===== LEFT SIDEBAR ===== */
+  .sidebar { width: var(--sidebar-width); background: white; border-right: 1px solid var(--gray-200); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+  .sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .sidebar-title { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  .scan-btn { background: linear-gradient(135deg, #1a56db, #7e3af2); color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.2s; }
+  .scan-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,86,219,0.3); }
+  .scan-btn.scanning { animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+
+  /* filter bar */
+  .filter-bar { padding: 10px 16px; border-bottom: 1px solid var(--gray-200); flex-shrink: 0; }
+  .filter-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .ftag { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--gray-200); background: var(--gray-50); color: var(--gray-600); transition: all 0.15s; }
+  .ftag:hover { border-color: var(--primary); color: var(--primary); }
+  .ftag.active { background: #eff6ff; border-color: var(--primary); color: var(--primary); }
+
+  /* card list */
+  .card-list { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .card { background: white; border: 1px solid var(--gray-200); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s; position: relative; }
+  .card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(26,86,219,0.1); transform: translateY(-1px); }
+  .card.active { border-color: var(--primary); border-left: 3px solid var(--primary); box-shadow: 0 2px 12px rgba(26,86,219,0.15); }
+  .card.confirmed { border-color: #057a55; border-left: 3px solid #057a55; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .card-name { font-size: 13px; font-weight: 700; color: var(--gray-800); line-height: 1.3; }
+  .stars { color: #f59e0b; font-size: 11px; white-space: nowrap; }
+  .card-drug { font-size: 12px; color: var(--primary); font-weight: 600; margin-bottom: 6px; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .tag { padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+  .tag-blue { background: #eff6ff; color: #1a56db; }
+  .tag-green { background: #f0fdf4; color: #057a55; }
+  .tag-purple { background: #f5f3ff; color: #7e3af2; }
+  .tag-orange { background: #fff7ed; color: #c27803; }
+  .tag-red { background: #fef2f2; color: #c81e1e; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; }
+  .card-date { font-size: 10px; color: var(--gray-600); }
+  .card-action { font-size: 11px; color: var(--primary); font-weight: 500; }
+  .confirmed-badge { position: absolute; top: 10px; right: 10px; background: #057a55; color: white; font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+
+  /* ===== RIGHT CONTENT ===== */
+  .content { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* page views */
+  .page { display: none; flex-direction: column; gap: 16px; }
+  .page.active { display: flex; }
+
+  /* welcome */
+  .welcome-hero { background: linear-gradient(135deg, #1a56db 0%, #7e3af2 100%); border-radius: 12px; padding: 28px; color: white; }
+  .welcome-hero h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .welcome-hero p { opacity: 0.85; font-size: 14px; line-height: 1.6; }
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat-card { background: white; border-radius: 10px; padding: 16px; text-align: center; border: 1px solid var(--gray-200); }
+  .stat-num { font-size: 28px; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 12px; color: var(--gray-600); margin-top: 4px; }
+
+  /* report */
+  .report-header { background: white; border-radius: 10px; padding: 20px; border: 1px solid var(--gray-200); }
+  .report-title { font-size: 18px; font-weight: 700; color: var(--gray-800); margin-bottom: 6px; }
+  .report-meta { display: flex; gap: 16px; font-size: 12px; color: var(--gray-600); }
+  .section { background: white; border-radius: 10px; padding: 20px; border: 1px solid var(--gray-200); }
+  .section-title { font-size: 15px; font-weight: 700; color: var(--gray-800); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 1px solid var(--gray-100); }
+  .info-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .info-table tr { border-bottom: 1px solid var(--gray-100); }
+  .info-table tr:last-child { border-bottom: none; }
+  .info-table td { padding: 8px 12px; }
+  .info-table td:first-child { color: var(--gray-600); width: 140px; font-weight: 500; }
+  .info-table td:last-child { color: var(--gray-800); }
+  .highlight-box { background: #eff6ff; border-left: 3px solid var(--primary); padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 13px; color: var(--gray-700); line-height: 1.6; margin-top: 10px; }
+  .contact-card { display: flex; align-items: center; gap: 14px; padding: 14px; background: var(--gray-50); border-radius: 8px; margin-bottom: 8px; }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #1a56db, #7e3af2); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+  .contact-info { flex: 1; }
+  .contact-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+  .contact-role { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+  .contact-actions { display: flex; gap: 6px; }
+
+  /* confirm bar */
+  .confirm-bar { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .confirm-bar.confirmed { background: #f0fdf4; border-color: #6ee7b7; }
+
+  /* charts page */
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .chart-card { background: white; border-radius: 10px; padding: 20px; border: 1px solid var(--gray-200); }
+  .chart-title { font-size: 14px; font-weight: 600; color: var(--gray-700); margin-bottom: 16px; }
+  .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { font-size: 12px; color: var(--gray-600); width: 80px; text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--gray-100); border-radius: 4px; height: 22px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; display: flex; align-items: center; padding-left: 8px; }
+  .bar-val { font-size: 11px; font-weight: 600; color: white; }
+  .donut-wrap { display: flex; align-items: center; justify-content: center; gap: 24px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gray-700); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .tl-item { display: flex; gap: 14px; }
+  .tl-left { display: flex; flex-direction: column; align-items: center; width: 40px; flex-shrink: 0; }
+  .tl-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 3px; }
+  .tl-line { width: 2px; flex: 1; background: var(--gray-200); margin: 3px 0; }
+  .tl-content { padding-bottom: 16px; }
+  .tl-date { font-size: 11px; color: var(--gray-600); }
+  .tl-text { font-size: 13px; color: var(--gray-800); font-weight: 500; margin-top: 2px; }
+  .tl-sub { font-size: 12px; color: var(--gray-600); margin-top: 2px; }
+
+  /* history page */
+  .history-list { display: flex; flex-direction: column; gap: 10px; }
+  .history-card { background: white; border-radius: 10px; padding: 16px; border: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; cursor: pointer; transition: all 0.2s; }
+  .history-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(26,86,219,0.08); }
+  .history-info { flex: 1; }
+  .history-date { font-size: 12px; color: var(--gray-600); }
+  .history-title { font-size: 14px; font-weight: 600; color: var(--gray-800); margin-top: 2px; }
+  .history-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .history-actions { display: flex; gap: 6px; }
+
+  /* search page */
+  .search-bar { display: flex; gap: 10px; align-items: center; }
+  .search-input { flex: 1; padding: 10px 16px; border: 1px solid var(--gray-300); border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s; }
+  .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+  .search-filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-label { font-size: 12px; font-weight: 600; color: var(--gray-600); }
+  .filter-select { padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13px; outline: none; background: white; cursor: pointer; }
+  .filter-select:focus { border-color: var(--primary); }
+  .search-results { display: flex; flex-direction: column; gap: 10px; }
+  .result-card { background: white; border-radius: 10px; padding: 16px; border: 1px solid var(--gray-200); transition: all 0.2s; cursor: pointer; }
+  .result-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(26,86,219,0.1); }
+  .result-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+  .result-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+  .result-phase { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .phase-1 { background: #eff6ff; color: #1a56db; }
+  .phase-2 { background: #f0fdf4; color: #057a55; }
+  .phase-3 { background: #fff7ed; color: #c27803; }
+  .phase-approved { background: #fef2f2; color: #c81e1e; }
+  .result-info { display: flex; gap: 16px; font-size: 12px; color: var(--gray-600); }
+  .result-info span { display: flex; align-items: center; gap: 4px; }
+
+  /* dept page */
+  .dept-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .dept-card { background: white; border-radius: 10px; padding: 14px; border: 1px solid var(--gray-200); cursor: pointer; transition: all 0.2s; }
+  .dept-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(26,86,219,0.1); }
+  .dept-card.active { border-color: var(--primary); background: #eff6ff; }
+  .dept-name { font-size: 13px; font-weight: 700; color: var(--gray-800); margin-bottom: 10px; text-align: center; }
+  .member-list { display: flex; flex-direction: column; gap: 6px; }
+  .member-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--gray-50); border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .member-item:hover { background: #eff6ff; }
+  .member-item.selected { background: #eff6ff; font-weight: 600; color: var(--primary); }
+  .member-avatar { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, #1a56db, #7e3af2); color: white; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .dept-actions { margin-top: 10px; display: flex; gap: 6px; }
+
+  .push-config { background: white; border-radius: 10px; padding: 20px; border: 1px solid var(--gray-200); margin-bottom: 16px; }
+  .push-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--gray-800); }
+  .push-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 13px; }
+  .push-label { width: 80px; color: var(--gray-600); font-weight: 500; flex-shrink: 0; }
+  .push-val { color: var(--gray-800); }
+  .toggle { width: 40px; height: 22px; background: #d1d5db; border-radius: 11px; position: relative; cursor: pointer; transition: background 0.2s; }
+  .toggle.on { background: var(--primary); }
+  .toggle::after { content: ''; width: 18px; height: 18px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle.on::after { left: 20px; }
+
+  /* modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: 12px; padding: 24px; width: 480px; max-width: 90vw; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--gray-800); }
+  .modal-body { margin-bottom: 20px; }
+  .input-group { margin-bottom: 12px; }
+  .input-label { font-size: 12px; font-weight: 600; color: var(--gray-600); margin-bottom: 4px; display: block; }
+  .input-field { width: 100%; padding: 9px 12px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 13px; outline: none; }
+  .input-field:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* toast */
+  .toast { position: fixed; top: 70px; right: 20px; background: var(--gray-800); color: white; padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 2000; opacity: 0; transform: translateY(-10px); transition: all 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* empty state */
+  .empty { text-align: center; padding: 40px 20px; color: var(--gray-600); }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-text { font-size: 14px; }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 2px; }
+
+  /* responsive tweak */
+  @media (max-width: 900px) {
+    .charts-grid { grid-template-columns: 1fr; }
+    .dept-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <div class="topnav-left">
+    <span class="topnav-logo">🧬 药明康德 · 小核酸BD雷达</span>
+    <span class="topnav-sub">WuXi TIDES Intelligence Platform</span>
+  </div>
+  <div class="topnav-right">
+    <button class="btn btn-outline" onclick="showTab('search')">🔍 药物检索</button>
+    <button class="btn btn-outline" onclick="showTab('history')">📁 历史记录</button>
+    <button class="btn btn-white" onclick="showTab('dept')">👥 推送管理</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" id="tab-radar" onclick="showTab('radar')">📡 BD雷达</div>
+  <div class="tab" id="tab-search" onclick="showTab('search')">🔍 药物检索</div>
+  <div class="tab" id="tab-charts" onclick="showTab('charts')">📊 统计图表</div>
+  <div class="tab" id="tab-history" onclick="showTab('history')">📁 历史记录 <span class="tab-badge" id="hist-count">3</span></div>
+  <div class="tab" id="tab-dept" onclick="showTab('dept')">👥 推送管理</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title">本周候选 <span style="color:var(--gray-600);font-weight:400;font-size:11px;">2026-04-19 ～ 04-26</span></span>
+      <button class="scan-btn" id="scanBtn" onclick="startScan()">⚡ 立即扫描</button>
+    </div>
+    <div class="filter-bar">
+      <div class="filter-tags">
+        <span class="ftag active" onclick="filterCards('all',this)">全部</span>
+        <span class="ftag" onclick="filterCards('siRNA',this)">siRNA</span>
+        <span class="ftag" onclick="filterCards('ASO',this)">ASO</span>
+        <span class="ftag" onclick="filterCards('oligo',this)">寡核苷酸</span>
+        <span class="ftag" onclick="filterCards('IND',this)">IND期</span>
+        <span class="ftag" onclick="filterCards('clinical',this)">临床期</span>
+      </div>
+    </div>
+    <div class="card-list" id="cardList">
+      <!-- cards injected by JS -->
+    </div>
+  </div>
+
+  <!-- CONTENT AREA -->
+  <div class="content" id="contentArea">
+
+    <!-- RADAR PAGE -->
+    <div class="page active" id="page-radar">
+      <div id="welcomeArea">
+        <div class="welcome-hero">
+          <h2>📡 小核酸BD雷达系统</h2>
+          <p>自动检索智慧芽数据库近7天最新披露的 siRNA / ASO / 寡核苷酸 / miRNA 药物信息，结合药明康德服务能力智能推荐潜在客户，支持一键生成完整尽调报告。</p>
+          <div style="margin-top:14px;display:flex;gap:10px;">
+            <button class="btn btn-white" onclick="startScan()">⚡ 开始BD雷达扫描</button>
+            <button class="btn btn-outline" onclick="showTab('search')">🔍 手动检索药物</button>
+          </div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-num">147</div><div class="stat-label">本周新增管线</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:#057a55;">32</div><div class="stat-label">小核酸相关</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:#7e3af2;">8</div><div class="stat-label">高优先推荐</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:#c27803;">3</div><div class="stat-label">已确认跟进</div></div>
+        </div>
+      </div>
+      <div id="reportArea" style="display:none;"></div>
+    </div>
+
+    <!-- SEARCH PAGE -->
+    <div class="page" id="page-search">
+      <div class="section">
+        <div class="section-title">🔍 药物信息检索</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div class="search-bar">
+            <input class="search-input" id="searchKeyword" placeholder="输入药物名称、研发代号（如 SNK-2726、SIL-204）..." onkeydown="if(event.key==='Enter')doSearch()"/>
+            <button class="btn btn-primary" onclick="doSearch()">🔍 搜索</button>
+            <button class="btn btn-outline" style="color:var(--gray-600);border-color:var(--gray-300);" onclick="clearSearch()">清空</button>
+          </div>
+          <div class="search-filters">
+            <div class="filter-group">
+              <span class="filter-label">药物类型</span>
+              <select class="filter-select" id="fDrugType">
+                <option value="">全部类型</option>
+                <option value="siRNA">siRNA</option>
+                <option value="ASO">ASO（反义寡核苷酸）</option>
+                <option value="miRNA">miRNA</option>
+                <option value="saRNA">saRNA</option>
+                <option value="mRNA">mRNA</option>
+                <option value="小分子">小分子化药</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">适应症</span>
+              <select class="filter-select" id="fDisease">
+                <option value="">全部适应症</option>
+                <option value="心血管">心血管疾病</option>
+                <option value="肿瘤">肿瘤</option>
+                <option value="代谢">代谢疾病</option>
+                <option value="神经">神经系统疾病</option>
+                <option value="罕见病">罕见病</option>
+                <option value="肝脏">肝脏疾病</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">靶点</span>
+              <select class="filter-select" id="fTarget">
+                <option value="">全部靶点</option>
+                <option value="KRAS">KRAS</option>
+                <option value="AGT">AGT（血管紧张素原）</option>
+                <option value="PCSK9">PCSK9</option>
+                <option value="TTR">TTR</option>
+                <option value="Lp(a)">Lp(a)</option>
+                <option value="HBV">HBV</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">临床状态</span>
+              <select class="filter-select" id="fPhase">
+                <option value="">全部阶段</option>
+                <option value="Discovery">药物发现</option>
+                <option value="Preclinical">临床前</option>
+                <option value="IND">IND获批</option>
+                <option value="Phase1">临床 I 期</option>
+                <option value="Phase2">临床 II 期</option>
+                <option value="Phase3">临床 III 期</option>
+                <option value="Approved">已获批上市</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">机构/公司</span>
+              <input class="filter-select" id="fOrg" placeholder="输入公司名称..." style="padding:8px 12px;"/>
+            </div>
+            <div class="filter-group">
+              <span class="filter-label">国家/地区</span>
+              <select class="filter-select" id="fCountry">
+                <option value="">全部地区</option>
+                <option value="CN">中国</option>
+                <option value="US">美国</option>
+                <option value="EU">欧洲</option>
+                <option value="JP">日本</option>
+                <option value="KR">韩国</option>
+                <option value="IL">以色列</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="searchResults"></div>
+    </div>
+
+    <!-- CHARTS PAGE -->
+    <div class="page" id="page-charts">
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">📊 本周药物类型分布</div>
+          <div class="bar-chart">
+            <div class="bar-row"><span class="bar-label">siRNA</span><div class="bar-track"><div class="bar-fill" style="width:72%;background:linear-gradient(90deg,#1a56db,#4f86f7)"><span class="bar-val">14条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">ASO</span><div class="bar-track"><div class="bar-fill" style="width:56%;background:linear-gradient(90deg,#7e3af2,#a78bfa)"><span class="bar-val">11条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">寡核苷酸</span><div class="bar-track"><div class="bar-fill" style="width:30%;background:linear-gradient(90deg,#057a55,#34d399)"><span class="bar-val">6条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">miRNA</span><div class="bar-track"><div class="bar-fill" style="width:15%;background:linear-gradient(90deg,#c27803,#fbbf24)"><span class="bar-val">3条</span></div></div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🌍 来源国家/地区分布</div>
+          <div class="bar-chart">
+            <div class="bar-row"><span class="bar-label">中国</span><div class="bar-track"><div class="bar-fill" style="width:65%;background:linear-gradient(90deg,#c81e1e,#f87171)"><span class="bar-val">13条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">美国</span><div class="bar-track"><div class="bar-fill" style="width:50%;background:linear-gradient(90deg,#1a56db,#4f86f7)"><span class="bar-val">10条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">以色列</span><div class="bar-track"><div class="bar-fill" style="width:20%;background:linear-gradient(90deg,#7e3af2,#a78bfa)"><span class="bar-val">4条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">韩国</span><div class="bar-track"><div class="bar-fill" style="width:15%;background:linear-gradient(90deg,#057a55,#34d399)"><span class="bar-val">3条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">欧洲</span><div class="bar-track"><div class="bar-fill" style="width:10%;background:linear-gradient(90deg,#c27803,#fbbf24)"><span class="bar-val">2条</span></div></div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">🔬 适应症热力分布</div>
+          <div class="bar-chart">
+            <div class="bar-row"><span class="bar-label">心血管</span><div class="bar-track"><div class="bar-fill" style="width:80%;background:linear-gradient(90deg,#c81e1e,#f87171)"><span class="bar-val">9条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">肿瘤</span><div class="bar-track"><div class="bar-fill" style="width:68%;background:linear-gradient(90deg,#7e3af2,#a78bfa)"><span class="bar-val">8条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">代谢疾病</span><div class="bar-track"><div class="bar-fill" style="width:55%;background:linear-gradient(90deg,#1a56db,#4f86f7)"><span class="bar-val">6条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">神经系统</span><div class="bar-track"><div class="bar-fill" style="width:40%;background:linear-gradient(90deg,#057a55,#34d399)"><span class="bar-val">5条</span></div></div></div>
+            <div class="bar-row"><span class="bar-label">罕见病</span><div class="bar-track"><div class="bar-fill" style="width:25%;background:linear-gradient(90deg,#c27803,#fbbf24)"><span class="bar-val">4条</span></div></div></div>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">📈 研发阶段分布</div>
+          <div class="donut-wrap">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#e5e7eb" stroke-width="18"/>
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#1a56db" stroke-width="18" stroke-dasharray="101 182" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#7e3af2" stroke-width="18" stroke-dasharray="63 182" stroke-dashoffset="-101" transform="rotate(-90 60 60)"/>
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#057a55" stroke-width="18" stroke-dasharray="45 182" stroke-dashoffset="-164" transform="rotate(-90 60 60)"/>
+              <circle cx="60" cy="60" r="45" fill="none" stroke="#c27803" stroke-width="18" stroke-dasharray="27 182" stroke-dashoffset="-209" transform="rotate(-90 60 60)"/>
+              <text x="60" y="65" text-anchor="middle" font-size="13" font-weight="700" fill="#1f2937">32条</text>
+            </svg>
+            <div class="donut-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#1a56db"></div>Discovery/临床前 14条</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#7e3af2"></div>IND/Phase I 9条</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#057a55"></div>Phase II 5条</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#c27803"></div>Phase III+ 4条</div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card" style="grid-column:span 2;">
+          <div class="chart-title">🕐 近4周扫描趋势</div>
+          <svg width="100%" height="100" viewBox="0 0 600 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#1a56db" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#1a56db" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <polyline points="50,70 150,55 250,45 350,60 450,35 550,20" fill="none" stroke="#1a56db" stroke-width="2.5" stroke-linejoin="round"/>
+            <polygon points="50,70 150,55 250,45 350,60 450,35 550,20 550,95 50,95" fill="url(#lineGrad)"/>
+            <circle cx="50" cy="70" r="4" fill="#1a56db"/>
+            <circle cx="150" cy="55" r="4" fill="#1a56db"/>
+            <circle cx="250" cy="45" r="4" fill="#1a56db"/>
+            <circle cx="350" cy="60" r="4" fill="#1a56db"/>
+            <circle cx="450" cy="35" r="4" fill="#1a56db"/>
+            <circle cx="550" cy="20" r="4" fill="#c81e1e"/>
+            <text x="50" y="90" text-anchor="middle" font-size="10" fill="#6b7280">4/5</text>
+            <text x="150" y="90" text-anchor="middle" font-size="10" fill="#6b7280">4/8</text>
+            <text x="250" y="90" text-anchor="middle" font-size="10" fill="#6b7280">4/12</text>
+            <text x="350" y="90" text-anchor="middle" font-size="10" fill="#6b7280">4/15</text>
+            <text x="450" y="90" text-anchor="middle" font-size="10" fill="#6b7280">4/19</text>
+            <text x="550" y="90" text-anchor="middle" font-size="10" fill="#c81e1e">4/26</text>
+            <text x="50" y="65" text-anchor="middle" font-size="10" fill="#374151">18</text>
+            <text x="150" y="50" text-anchor="middle" font-size="10" fill="#374151">22</text>
+            <text x="250" y="40" text-anchor="middle" font-size="10" fill="#374151">25</text>
+            <text x="350" y="55" text-anchor="middle" font-size="10" fill="#374151">21</text>
+            <text x="450" y="30" text-anchor="middle" font-size="10" fill="#374151">28</text>
+            <text x="550" y="15" text-anchor="middle" font-size="10" fill="#c81e1e" font-weight="700">32</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div class="page" id="page-history">
+      <div class="section">
+        <div class="section-title">📁 历史扫描记录</div>
+        <div class="history-list" id="historyList">
+          <!-- injected by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPT PAGE -->
+    <div class="page" id="page-dept">
+      <div class="push-config">
+        <div class="push-title">⚙️ 推送配置</div>
+        <div class="push-row">
+          <span class="push-label">推送频率</span>
+          <select class="filter-select" style="width:160px;">
+            <option>每周一次（周一9:00）</option>
+            <option>每日一次（早9:00）</option>
+            <option>实时推送</option>
+          </select>
+        </div>
+        <div class="push-row">
+          <span class="push-label">药物范围</span>
+          <span class="push-val">siRNA / ASO / 寡核苷酸 / miRNA（已锁定）</span>
+        </div>
+        <div class="push-row">
+          <span class="push-label">时间窗口</span>
+          <span class="push-val">近7天（滚动计算）</span>
+        </div>
+        <div class="push-row">
+          <span class="push-label">邮件推送</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="push-row">
+          <span class="push-label">消息通知</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="showToast('推送配置已保存 ✅')">保存配置</button>
+          <button class="btn btn-outline" style="color:var(--gray-600);border-color:var(--gray-300);" onclick="openModal('addDept')">➕ 新增部门</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title">👥 推送部门与人员管理</div>
+        <div class="dept-grid" id="deptGrid">
+          <!-- injected by JS -->
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-addDept">
+  <div class="modal">
+    <div class="modal-title">➕ 新增部门</div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label class="input-label">部门名称</label>
+        <input class="input-field" id="newDeptName" placeholder="如：药化六部"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">成员（每行一位，格式：姓名）</label>
+        <textarea class="input-field" id="newDeptMembers" rows="4" placeholder="甲&#10;乙&#10;丙&#10;丁"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" style="color:var(--gray-600);border-color:var(--gray-300);" onclick="closeModal('addDept')">取消</button>
+      <button class="btn btn-primary" onclick="addDept()">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-addMember">
+  <div class="modal">
+    <div class="modal-title">➕ 新增成员</div>
+    <div class="modal-body">
+      <div class="input-group">
+        <label class="input-label">成员姓名</label>
+        <input class="input-field" id="newMemberName" placeholder="请输入姓名"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">职务/角色</label>
+        <input class="input-field" id="newMemberRole" placeholder="如：高级BD经理"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" style="color:var(--gray-600);border-color:var(--gray-300);" onclick="closeModal('addMember')">取消</button>
+      <button class="btn btn-primary" onclick="addMember()">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== DATA =====
+const CARDS = [
+  { id:1, name:'施能康医药 × 华东医药', drug:'SNK-2726', type:'siRNA', phase:'IND获批', indication:'高血压', target:'AGT', country:'🇨🇳', stars:5, date:'2026-04-25', confirmed:false, filter:['siRNA','IND'] },
+  { id:2, name:'Silexion Therapeutics', drug:'SIL-204', type:'siRNA', phase:'临床前', indication:'胰腺癌', target:'KRAS', country:'🇮🇱', stars:4, date:'2026-04-23', confirmed:false, filter:['siRNA'] },
+  { id:3, name:'Creyon Bio', drug:'AI寡核苷酸', type:'寡核苷酸', phase:'临床前', indication:'神经肌肉疾病', target:'RNA-targeted', country:'🇺🇸', stars:4, date:'2026-04-23', confirmed:false, filter:['oligo'] },
+  { id:4, name:'成都心正合医药', drug:'LC-1016', type:'siRNA', phase:'临床I期', indication:'高脂蛋白血症', target:'Lp(a)', country:'🇨🇳', stars:3, date:'2026-04-22', confirmed:true, filter:['siRNA','clinical'] },
+  { id:5, name:'OliPass Corp.', drug:'PTP1B-ASO', type:'ASO', phase:'Discovery', indication:'2型糖尿病', target:'PTP1B', country:'🇰🇷', stars:3, date:'2026-04-20', confirmed:false, filter:['ASO'] },
+];
+
+const HISTORY = [
+  { date:'2026-04-26', label:'第4周扫描', count:32, confirmed:3, tags:['siRNA×14','ASO×11','寡核苷酸×6'] },
+  { date:'2026-04-19', label:'第3周扫描', count:28, confirmed:2, tags:['siRNA×12','ASO×10','寡核苷酸×5'] },
+  { date:'2026-04-12', label:'第2周扫描', count:25, confirmed:1, tags:['siRNA×10','ASO×9','寡核苷酸×6'] },
+];
+
+let DEPTS = [
+  { name:'药化一部', members:['甲','乙','丙','丁'] },
+  { name:'药化二部', members:['甲','乙','丙','丁'] },
+  { name:'化学三部', members:['甲','乙','丙','丁'] },
+  { name:'化学四部', members:['甲','乙','丙','丁'] },
+  { name:'化学五部', members:['甲','乙','丙','丁'] },
+];
+
+let selectedDept = null;
+let selectedMemberDept = null;
+let currentFilter = 'all';
+let selectedCard = null;
+
+const SEARCH_MOCK = [
+  { name:'Inclisiran', company:'Novartis', type:'siRNA', indication:'高胆固醇血症', target:'PCSK9', phase:'Approved', country:'US', year:2020 },
+  { name:'Patisiran', company:'Alnylam', type:'siRNA', indication:'转甲状腺素蛋白淀粉样变', target:'TTR', phase:'Approved', country:'US', year:2018 },
+  { name:'Givosiran', company:'Alnylam', type:'siRNA', indication:'急性肝卟啉症', target:'ALAS1', phase:'Approved', country:'US', year:2019 },
+  { name:'SNK-2726', company:'施能康医药', type:'siRNA', indication:'高血压', target:'AGT', phase:'Phase1', country:'CN', year:2026 },
+  { name:'SIL-204', company:'Silexion', type:'siRNA', indication:'胰腺癌', target:'KRAS', phase:'Preclinical', country:'IL', year:2026 },
+  { name:'LC-1016', company:'成都心正合', type:'siRNA', indication:'高脂蛋白血症', target:'Lp(a)', phase:'Phase1', country:'CN', year:2026 },
+  { name:'CB-151', company:'Chimeron Bio', type:'siRNA', indication:'α1-抗胰蛋白酶缺乏症', target:'A1AT', phase:'Discovery', country:'US', year:2025 },
+  { name:'ION449', company:'Ionis', type:'ASO', indication:'高脂血症', target:'ANGPTL3', phase:'Phase2', country:'US', year:2022 },
+  { name:'Eplontersen', company:'AstraZeneca/Ionis', type:'ASO', indication:'遗传性转甲状腺素蛋白淀粉样变', target:'TTR', phase:'Approved', country:'US', year:2023 },
+];
+
+// ===== INIT =====
+window.onload = function() {
+  renderCards(CARDS);
+  renderHistory();
+  renderDepts();
+};
+
+// ===== TABS =====
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('page-'+tab).classList.add('active');
+}
+
+// ===== SCAN =====
+function startScan() {
+  const btn = document.getElementById('scanBtn');
+  btn.classList.add('scanning');
+  btn.textContent = '⏳ 扫描中...';
+  showToast('正在检索智慧芽数据库近7天小核酸数据...');
+  setTimeout(() => {
+    btn.classList.remove('scanning');
+    btn.innerHTML = '⚡ 立即扫描';
+    showToast('✅ 扫描完成！发现 32 条小核酸管线，高优先推荐 4 条');
+    renderCards(CARDS);
+    // auto select first
+    selectCard(CARDS[0]);
+  }, 2200);
+}
+
+// ===== CARDS =====
+function renderCards(data) {
+  const list = document.getElementById('cardList');
+  if (!data.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">暂无符合条件的候选</div></div>';
+    return;
+  }
+  list.innerHTML = data.map(c => `
+    <div class="card${c.confirmed?' confirmed':''}${selectedCard&&selectedCard.id===c.id?' active':''}" onclick="selectCard(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      ${c.confirmed?'<span class="confirmed-badge">✅ 已跟进</span>':''}
+      <div class="card-top">
+        <div class="card-name">${c.country} ${c.name}</div>
+        <div class="stars">${'⭐'.repeat(c.stars)}</div>
+      </div>
+      <div class="card-drug">💊 ${c.drug}</div>
+      <div class="card-tags">
+        <span class="tag tag-blue">${c.type}</span>
+        <span class="tag tag-purple">${c.target}</span>
+        <span class="tag tag-green">${c.indication}</span>
+        <span class="tag tag-orange">${c.phase}</span>
+      </div>
+      <div class="card-footer">
+        <span class="card-date">📅 ${c.date}</span>
+        <span class="card-action">查看报告 →</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCards(type, el) {
+  document.querySelectorAll('.ftag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentFilter = type;
+  const filtered = type==='all' ? CARDS : CARDS.filter(c => c.filter.includes(type));
+  renderCards(filtered);
+}
+
+function selectCard(card) {
+  selectedCard = card;
+  showTab('radar');
+  document.getElementById('welcomeArea').style.display = 'none';
+  document.getElementById('reportArea').style.display = 'block';
+  renderReport(card);
+  // re-render cards to highlight active
+  const filtered = currentFilter==='all' ? CARDS : CARDS.filter(c => c.filter.includes(currentFilter));
+  renderCards(filtered);
+}
+
+// ===== REPORT =====
+function renderReport(c) {
+  const isConfirmed = c.confirmed;
+  document.getElementById('reportArea').innerHTML = `
+    <div class="report-header">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="report-title">${c.country} ${c.name} · 完整尽调报告</div>
+          <div class="report-meta">
+            <span>💊 ${c.drug}</span>
+            <span>📅 ${c.date}</span>
+            <span>📡 来源：智慧芽数据库</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-outline" style="color:var(--gray-600);border-color:var(--gray-300);font-size:12px;" onclick="window.print()">🖨️ 导出PDF</button>
+          <button class="btn btn-primary btn-sm" onclick="copyEmailTemplate('${c.name}','${c.drug}')">📧 生成BD邮件</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="${isConfirmed?'confirm-bar confirmed':'confirm-bar'}" id="confirmBar">
+      ${isConfirmed
+        ? `<span>✅ 已确认深入尽调，BD团队跟进中</span><button class="btn btn-sm" style="background:#057a55;color:white;" onclick="pushToDept()">📨 推送给BD团队</button>`
+        : `<span>⚠️ 是否确认对该管线进行深入尽调？确认后将通知BD团队跟进。</span>
+           <div style="display:flex;gap:8px;">
+             <button class="btn btn-success btn-sm" onclick="confirmDiligence(${c.id})">✅ 确认深入尽调</button>
+             <button class="btn btn-sm" style="background:var(--gray-200);color:var(--gray-700);" onclick="showToast('已跳过该候选')">跳过</button>
+           </div>`
+      }
+    </div>
+
+    <div class="section">
+      <div class="section-title">💊 一、管线详细信息</div>
+      <table class="info-table">
+        <tr><td>药物名称</td><td><strong>${c.drug}</strong></td></tr>
+        <tr><td>药物类型</td><td><span class="tag tag-blue">${c.type}</span></td></tr>
+        <tr><td>靶点</td><td>${c.target}</td></tr>
+        <tr><td>适应症</td><td>${c.indication}</td></tr>
+        <tr><td>研发阶段</td><td><span class="tag tag-orange">${c.phase}</span></td></tr>
+        <tr><td>原研公司</td><td>${c.name}</td></tr>
+        <tr><td>国家/地区</td><td>${c.country}</td></tr>
+        <tr><td>信息来源</td><td>智慧芽数据库 · ${c.date} 披露</td></tr>
+      </table>
+      <div class="highlight-box">
+        💡 <strong>药明康德服务匹配：</strong>WuXi TIDES（${c.type}序列GMP合成、化学修饰）+ WuXi Biology（体内外药效评估）+ WuXi DMPK（PK/PD研究）+ WuXi Formulation（递送系统开发）+ WuXi Regulatory（IND申报支持）
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🏢 二、公司工商信息</div>
+      <table class="info-table">
+        <tr><td>公司名称</td><td><strong>${c.name}</strong></td></tr>
+        <tr><td>国家/地区</td><td>${c.country}</td></tr>
+        <tr><td>企业规模</td><td>初创/中小型 Biotech</td></tr>
+        <tr><td>上市状态</td><td>未上市（智慧芽数据库核查）</td></tr>
+        <tr><td>成立时间</td><td>近5年内成立</td></tr>
+        <tr><td>主要业务</td><td>${c.type} 平台药物研发</td></tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🤝 三、与药明康德合作历史</div>
+      <div style="padding:14px;background:#f9fafb;border-radius:8px;font-size:13px;color:var(--gray-700);line-height:1.6;">
+        ❌ 智慧芽数据库中<strong>未检索到</strong>双方历史合作记录。<br/>
+        ✅ <strong>评估结论：</strong>属于全新BD开发目标，竞争空白度高，先发优势价值极高。建议BD团队在60天内完成首次接触。
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📞 四、推荐联系人</div>
+      <div class="contact-card">
+        <div class="avatar">王</div>
+        <div class="contact-info">
+          <div class="contact-name">王宏（推测）</div>
+          <div class="contact-role">法定代表人 / CEO — 首要接触对象</div>
+        </div>
+        <div class="contact-actions">
+          <button class="btn btn-primary btn-sm" onclick="showToast('已复制联系建议 📋')">📋 复制</button>
+        </div>
+      </div>
+      <div class="contact-card">
+        <div class="avatar" style="background:linear-gradient(135deg,#057a55,#34d399);">PI</div>
+        <div class="contact-info">
+          <div class="contact-name">主要研究者（待查）</div>
+          <div class="contact-role">临床试验 PI — 可通过 CDE 临床试验公示页获取</div>
+        </div>
+        <div class="contact-actions">
+          <button class="btn btn-sm" style="background:var(--gray-200);color:var(--gray-700);" onclick="showToast('正在查询CDE公示信息...')">🔍 查询</button>
+        </div>
+      </div>
+      <div class="highlight-box">
+        📬 <strong>BD接触路径建议：</strong>① LinkedIn搜索 → ② CDE临床公示查PI → ③ 行业会议（CSPC/CCOA）接触 → ④ 产业协会引荐
+      </div>
+    </div>
+  `;
+}
+
+function confirmDiligence(id) {
+  const card = CARDS.find(c => c.id===id);
+  if (card) {
+    card.confirmed = true;
+    document.getElementById('confirmBar').innerHTML = `<span>✅ 已确认深入尽调，BD团队跟进中</span><button class="btn btn-sm" style="background:#057a55;color:white;" onclick="pushToDept()">📨 推送给BD团队</button>`;
+    document.getElementById('confirmBar').className = 'confirm-bar confirmed';
+    const filtered = currentFilter==='all' ? CARDS : CARDS.filter(c => c.filter.includes(currentFilter));
+    renderCards(filtered);
+    showToast('✅ 已确认！正在通知BD团队跟进...');
+    // save to history
+    saveToHistory(card);
+  }
+}
+
+function saveToHistory(card) {
+  HISTORY.unshift({ date: new Date().toISOString().slice(0,10), label:`尽调确认：${card.drug}`, count:1, confirmed:1, tags:[card.type, card.indication, card.phase] });
+  document.getElementById('hist-count').textContent = HISTORY.length;
+  renderHistory();
+}
+
+function pushToDept() {
+  showTab('dept');
+  showToast('📨 请选择推送部门和人员');
+}
+
+// ===== HISTORY =====
+function renderHistory() {
+  document.getElementById('historyList').innerHTML = HISTORY.map((h,i) => `
+    <div class="history-card" onclick="showToast('正在加载历史报告...')">
+      <div class="history-info">
+        <div class="history-date">📅 ${h.date}</div>
+        <div class="history-title">${h.label} — 共 ${h.count} 条，已确认 ${h.confirmed} 条</div>
+        <div class="history-tags">${h.tags.map(t=>`<span class="tag tag-blue">${t}</span>`).join('')}</div>
+      </div>
+      <div class="history-actions">
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showToast('报告加载中...')">查看报告</button>
+        <button class="btn btn-sm" style="background:var(--gray-200);color:var(--gray-700);" onclick="event.stopPropagation();showToast('正在导出...')">导出</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== SEARCH =====
+function doSearch() {
+  const kw = document.getElementById('searchKeyword').value.toLowerCase();
+  const dtype = document.getElementById('fDrugType').value;
+  const disease = document.getElementById('fDisease').value;
+  const target = document.getElementById('fTarget').value;
+  const phase = document.getElementById('fPhase').value;
+  const org = document.getElementById('fOrg').value.toLowerCase();
+  const country = document.getElementById('fCountry').value;
+
+  let results = SEARCH_MOCK.filter(r => {
+    if (kw && !r.name.toLowerCase().includes(kw) && !r.company.toLowerCase().includes(kw) && !r.indication.toLowerCase().includes(kw)) return false;
+    if (dtype && !r.type.includes(dtype)) return false;
+    if (disease && !r.indication.includes(disease)) return false;
+    if (target && r.target !== target) return false;
+    if (phase && r.phase !== phase) return false;
+    if (org && !r.company.toLowerCase().includes(org)) return false;
+    if (country && r.country !== country) return false;
+    return true;
+  });
+
+  const phaseColor = { Approved:'phase-approved', Phase3:'phase-3', Phase2:'phase-2', Phase1:'phase-1', Preclinical:'phase-1', Discovery:'phase-1' };
+
+  document.getElementById('searchResults').innerHTML = results.length
+    ? `<div class="section"><div class="section-title">🔍 检索结果（${results.length} 条）</div><div class="search-results">${
+        results.map(r => `
+          <div class="result-card" onclick="showToast('正在加载 ${r.name} 详细信息...')">
+            <div class="result-top">
+              <div class="result-name">💊 ${r.name}</div>
+              <span class="result-phase ${phaseColor[r.phase]||'phase-1'}">${r.phase}</span>
+            </div>
+            <div class="result-info">
+              <span>🏢 ${r.company}</span>
+              <span>🎯 ${r.target}</span>
+              <span>🏥 ${r.indication}</span>
+              <span>🧬 ${r.type}</span>
+              <span>🌍 ${r.country}</span>
+            </div>
+          </div>
+        `).join('')
+      }</div></div>`
+    : `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">未找到符合条件的药物，请调整筛选条件</div></div>`;
+}
+
+function clearSearch() {
+  document.getElementById('searchKeyword').value = '';
+  document.getElementById('fDrugType').value = '';
+  document.getElementById('fDisease').value = '';
+  document.getElementById('fTarget').value = '';
+  document.getElementById('fPhase').value = '';
+  document.getElementById('fOrg').value = '';
+  document.getElementById('fCountry').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+}
+
+// ===== DEPTS =====
+function renderDepts() {
+  document.getElementById('deptGrid').innerHTML = DEPTS.map((d,di) => `
+    <div class="dept-card${selectedDept===di?' active':''}" id="dept-${di}">
+      <div class="dept-name">🏬 ${d.name}</div>
+      <div class="member-list">
+        ${d.members.map((m,mi) => `
+          <div class="member-item" id="member-${di}-${mi}" onclick="toggleMember(${di},${mi})">
+            <div class="member-avatar">${m.charAt(0)}</div>
+            <span>${m}</span>
+          </div>
+        `).join('')}
+      </div>
+      <div class="dept-actions">
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openAddMember(${di})">➕ 成员</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#c81e1e;" onclick="event.stopPropagation();removeDept(${di})">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleMember(di, mi) {
+  const el = document.getElementById(`member-${di}-${mi}`);
+  el.classList.toggle('selected');
+  const name = DEPTS[di].members[mi];
+  if (el.classList.contains('selected')) {
+    showToast(`已选中 ${DEPTS[di].name} · ${name} 作为推送对象`);
+  }
+}
+
+function openAddMember(di) {
+  selectedMemberDept = di;
+  openModal('addMember');
+}
+
+function addMember() {
+  const name = document.getElementById('newMemberName').value.trim();
+  if (!name) { showToast('请输入成员姓名'); return; }
+  DEPTS[selectedMemberDept].members.push(name);
+  renderDepts();
+  closeModal('addMember');
+  showToast(`✅ 已添加成员：${name}`);
+}
+
+function removeDept(di) {
+  DEPTS.splice(di, 1);
+  renderDepts();
+  showToast('已删除该部门');
+}
+
+function addDept() {
+  const name = document.getElementById('newDeptName').value.trim();
+  const members = document.getElementById('newDeptMembers').value.trim().split('\n').filter(Boolean);
+  if (!name) { showToast('请输入部门名称'); return; }
+  DEPTS.push({ name, members: members.length ? members : ['甲','乙','丙','丁'] });
+  renderDepts();
+  closeModal('addDept');
+  showToast(`✅ 已添加部门：${name}`);
+}
+
+// ===== MODAL =====
+function openModal(id) { document.getElementById('modal-'+id).classList.add('open'); }
+function closeModal(id) { document.getElementById('modal-'+id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+// ===== EMAIL =====
+function copyEmailTemplate(company, drug) {
+  const txt = `尊敬的 ${company} 团队，\n\n您好！我是药明康德（WuXi AppTec）BD团队，关注到贵公司正在推进 ${drug} 项目的研发工作，非常感兴趣。\n\n药明康德 WuXi TIDES 平台可为贵公司提供从序列合成、化学修饰、递送系统开发到CMC申报的全链条一体化服务，已支持多个siRNA/ASO产品成功获批上市。\n\n期待有机会进一步交流合作可能，请问近期是否方便安排一次视频会议？\n\n此致\n药明康德 BD团队`;
+  navigator.clipboard.writeText(txt).then(() => showToast('📧 BD邮件模板已复制到剪贴板！'));
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
